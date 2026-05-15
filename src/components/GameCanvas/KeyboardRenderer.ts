@@ -35,8 +35,6 @@ export class KeyboardRenderer {
     firstNote: FIRST_NOTE,
     lastNote: LAST_NOTE,
   };
-  private labelMap: Record<string, number> = {};
-  private showLabels = false;
 
   constructor() {
     this.container = new Container();
@@ -249,8 +247,6 @@ export class KeyboardRenderer {
   }
 
   setKeyLabels(keyMap: Record<string, number>, show: boolean): void {
-    this.labelMap = keyMap;
-    this.showLabels = show;
     this.labelLayer.removeChildren();
     if (!show) return;
 
