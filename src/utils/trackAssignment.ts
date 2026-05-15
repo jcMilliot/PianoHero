@@ -1,6 +1,9 @@
-import type { NoteEvent, ParsedTrack, RawNote, TrackAssignment } from '../types';
+import type { Hand, NoteEvent, ParsedTrack, RawNote, TrackAssignment } from '../types';
 
 export type AssignmentMap = Record<number, TrackAssignment>;
+
+// MIDI note 60 = middle C, used as split point for single-track hand separation
+const SPLIT_NOTE = 60;
 
 export const autoAssign = (tracks: ParsedTrack[]): AssignmentMap => {
   const map: AssignmentMap = {};
@@ -19,19 +22,34 @@ export const autoAssign = (tracks: ParsedTrack[]): AssignmentMap => {
   return map;
 };
 
+const isSingleTrack = (raw: RawNote[], assignment: AssignmentMap): boolean => {
+  const activeIndices = new Set(
+    raw.map((n) => n.trackIndex).filter((i) => assignment[i] && assignment[i] !== 'ignore'),
+  );
+  return activeIndices.size === 1;
+};
+
 export const buildNoteEvents = (
   raw: RawNote[],
   assignment: AssignmentMap,
 ): NoteEvent[] => {
+  const singleTrack = isSingleTrack(raw, assignment);
   const out: NoteEvent[] = [];
+
   for (const n of raw) {
     const a = assignment[n.trackIndex];
     if (!a || a === 'ignore') continue;
+
+    // For single-track MIDIs, split by pitch instead of track assignment
+    const hand: Hand = singleTrack
+      ? n.note >= SPLIT_NOTE ? 'right' : 'left'
+      : (a as Hand);
+
     out.push({
       note: n.note,
       time: n.time,
       duration: n.duration,
-      track: a,
+      track: hand,
       velocity: n.velocity,
       trackIndex: n.trackIndex,
     });
